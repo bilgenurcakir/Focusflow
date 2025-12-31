@@ -7,9 +7,9 @@ import {
   Switch,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import Slider from "@react-native-community/slider";
+import { Slider } from "react-native";
 
-export default function SettingsScreen() {
+export default function SettingsScreen({navigation}) {
   const [darkMode, setDarkMode] = useState(true);
   const [volume, setVolume] = useState(0.7);
 
@@ -17,7 +17,10 @@ export default function SettingsScreen() {
     <View style={styles.container}>
       {/* HEADER */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn}>
+       <TouchableOpacity
+  style={styles.backBtn}
+  onPress={() => navigation.goBack()}
+>
           <Ionicons name="chevron-back" size={24} color="#fff" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Settings</Text>
@@ -45,14 +48,14 @@ export default function SettingsScreen() {
             <Text style={styles.rowLabel}>Volume</Text>
           </View>
           <Slider
-            style={{ width: 140 }}
-            minimumValue={0}
-            maximumValue={1}
-            value={volume}
-            onValueChange={setVolume}
-            minimumTrackTintColor="#4EC8C0"
-            maximumTrackTintColor="#2A2E35"
-            thumbTintColor="#4EC8C0"
+            style={{ width: 140 }}          // 140 piksel genişlik
+            minimumValue={0}                // Minimum: 0 (sessiz)
+            maximumValue={1}                // Maximum: 1 (tam ses)
+            value={volume}                  // Mevcut değer: volume state'i
+            onValueChange={setVolume}       // Değer değişince setVolume çalışır
+            minimumTrackTintColor="#4EC8C0" // Sol taraf rengi: turkuaz
+            maximumTrackTintColor="#2A2E35" // Sağ taraf rengi: gri
+            thumbTintColor="#4EC8C0"        // Kaydırıcı rengi: turkuaz
           />
         </View>
       </View>
@@ -66,10 +69,14 @@ export default function SettingsScreen() {
             <Text style={styles.rowLabel}>Dark Mode</Text>
           </View>
           <Switch
-            value={darkMode}
-            onValueChange={setDarkMode}
-            trackColor={{ false: "#2A2E35", true: "#4EC8C0" }}
-            thumbColor="#fff"
+           value={darkMode}                // Mevcut değer: darkMode state'i
+            onValueChange={setDarkMode}     // Değer değişince setDarkMode çalışır
+            // trackColor: ray renkleri
+            trackColor={{ 
+              false: "#2A2E35",             // Kapalıyken: gri
+              true: "#4EC8C0"               // Açıkken: turkuaz
+            }}
+            thumbColor="#fff"               // Kaydırıcı rengi: beyaz
           />
         </View>
       </View>

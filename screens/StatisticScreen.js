@@ -9,17 +9,20 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import Svg, { Circle } from "react-native-svg";
 
-export default function StatisticsScreen() {
-  const radius = 60;
-  const stroke = 14;
-  const circumference = 2 * Math.PI * radius;
-  const progress = 0.75; // %75
+export default function StatisticsScreen({navigation}) {
 
-  return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+  const radius = 60; // Dairenin yarıçapı (piksel)
+  const stroke = 14; // Çizgi kalınlığı
+  const circumference = 2 * Math.PI * radius; // Çevrenin uzunluğu (matematik)
+  const progress = 0.75;          // İlerleme yüzdesi (%75)
+
+  return ( //showsVerticalScrollIndicator=kaydırma çubuğunu gizle
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}> 
       {/* HEADER */}
       <View style={styles.header}>
-        <Ionicons name="chevron-back" size={26} color="#fff" />
+       <TouchableOpacity onPress={() => navigation.navigate("Timer")}>
+  <Ionicons name="chevron-back" size={26} color="#fff" />
+</TouchableOpacity>
         <Text style={styles.headerTitle}>Statistics</Text>
         <View style={{ width: 26 }} />
       </View>
@@ -48,25 +51,28 @@ export default function StatisticsScreen() {
       <View style={styles.distributionBox}>
         <Svg width={160} height={160}>
           <Circle
-            cx="80"
-            cy="80"
-            r={radius}
-            stroke="#2A2E35"
-            strokeWidth={stroke}
-            fill="none"
+            cx="80"                  // Merkez X: 80 (160'ın yarısı)
+            cy="80"                  // Merkez Y: 80
+            r={radius}               // Yarıçap: 60
+            stroke="#2A2E35"         // Çizgi rengi: gri
+            strokeWidth={stroke}     // Kalınlık: 14
+            fill="none"              // İç dolgu yok
           />
           <Circle
             cx="80"
             cy="80"
             r={radius}
-            stroke="#4EC8C0"
+                      stroke="#4EC8C0"         // Turkuaz
             strokeWidth={stroke}
-            strokeDasharray={circumference}
+            strokeDasharray={circumference}  // Kesikli çizgi paterni
+            // strokeDashoffset: çizginin ne kadarı boş
+            // circumference * (1 - progress): %75 dolu, %25 boş
             strokeDashoffset={circumference * (1 - progress)}
-            strokeLinecap="round"
+            strokeLinecap="round"    // Uçlar yuvarlak
             fill="none"
-            rotation="-90"
-            origin="80,80"
+            rotation="-90"           // -90 derece döndür (saat 12'den başla)
+            origin="80,80"           // Dönme merkezi
+
           />
         </Svg>
 
@@ -110,7 +116,10 @@ export default function StatisticsScreen() {
       />
 
       {/* SHARE BUTTON */}
-      <TouchableOpacity style={styles.shareBtn}>
+  <TouchableOpacity
+  style={styles.shareBtn}
+  onPress={() => navigation.navigate("ShareModal")}
+>
         <Ionicons name="share-outline" size={20} color="#0E1525" />
         <Text style={styles.shareText}>Share Statistics</Text>
       </TouchableOpacity>
@@ -120,6 +129,9 @@ export default function StatisticsScreen() {
 
 /* ---------- COMPONENTS ---------- */
 
+// StatCard: İstatistik kartı componenti
+// { title, value }: component'e gönderilen prop'lar
+// Örnek: <StatCard title="Total Pomodoros" value="1,204" />
 const StatCard = ({ title, value }) => (
   <View style={styles.statCard}>
     <Text style={styles.statTitle}>{title}</Text>
@@ -127,6 +139,8 @@ const StatCard = ({ title, value }) => (
   </View>
 );
 
+// LegendItem: Legend elemanı (renkli nokta + etiket + değer)
+// { color, label, value }: component'e gönderilen prop'lar
 const LegendItem = ({ color, label, value }) => (
   <View style={styles.legendItem}>
     <View style={[styles.dot, { backgroundColor: color }]} />
@@ -137,6 +151,8 @@ const LegendItem = ({ color, label, value }) => (
   </View>
 );
 
+// SessionItem: Seans elemanı (ikon + başlık + tarih + süre)
+// { title, date, time, icon }: component'e gönderilen prop'lar
 const SessionItem = ({ title, date, time, icon }) => (
   <View style={styles.sessionItem}>
     <View style={styles.sessionIcon}>

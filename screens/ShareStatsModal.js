@@ -8,9 +8,9 @@ import {
 } from "react-native";
 import FontAwesome from "react-native-vector-icons/FontAwesome";
 
-export default function ShareStatsModal({ visible, onClose }) {
+export default function ShareStatsModal({ navigation }) {
   return (
-    <Modal visible={visible} animationType="fade" transparent>
+
       <View style={styles.overlay}>
         <View style={styles.card}>
 
@@ -42,7 +42,7 @@ export default function ShareStatsModal({ visible, onClose }) {
 
         {/* BUTTONS */}
         <View style={styles.actions}>
-          <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
+          <TouchableOpacity style={styles.closeBtn}  onPress={() => navigation.goBack()}>
             <Text style={styles.closeText}>Close</Text>
           </TouchableOpacity>
 
@@ -54,7 +54,7 @@ export default function ShareStatsModal({ visible, onClose }) {
           </TouchableOpacity>
         </View>
       </View>
-    </Modal>
+ 
   );
 }
 const styles = StyleSheet.create({

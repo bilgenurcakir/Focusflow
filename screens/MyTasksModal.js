@@ -9,14 +9,19 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
-export default function MyTasksModal({ visible, onClose }) {
+export default function MyTasksModal({ navigation }) 
+{
+  //  görevleri saklamak için state yapısı eklenecek 
   return (
-    <Modal visible={visible} animationType="slide" transparent>
+  
       <View style={styles.overlay}>
         <View style={styles.sheet}>
           {/* HEADER */}
           <View style={styles.header}>
-            <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
+<TouchableOpacity
+  onPress={navigation.goBack}
+  style={styles.closeBtn}
+>
               <Ionicons name="close" size={22} color="#fff" />
             </TouchableOpacity>
             <Text style={styles.title}>My Tasks</Text>
@@ -47,15 +52,15 @@ export default function MyTasksModal({ visible, onClose }) {
           </View>
         </View>
       </View>
-    </Modal>
+ 
   );
 }
 
 /* ---------- COMPONENTS ---------- */
-
+// TaskItem: Tek bir görev elemanı, circle yerine dolu/boş toggle yapılcak
 const TaskItem = ({ text }) => (
   <View style={styles.taskItem}>
-    <View style={styles.circle} />
+    <View style={styles.circle} /> 
     <Text style={styles.taskText}>{text}</Text>
   </View>
 );
