@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import {
   View,
   Text,
@@ -9,8 +9,11 @@ import {
 import { Slider } from '@miblanchard/react-native-slider';
 import FontAwesome from "react-native-vector-icons/FontAwesome";
 import { sessionStorage } from "../utils/sessionStorage";
+import { ThemeContext } from "../context/ThemeContext";
 
-export default function CycleSettingsModal({navigation}) {
+export default function CycleSettingsModal({navigation, route}) {
+  const theme = useContext(ThemeContext);
+  const { taskName } = route.params || {};
   const [focus, setFocus] = useState(25);  // focus: Odak süresi (dakika)
   const [shortBreak, setShortBreak] = useState(5);// shortBreak: Kısa mola süresi (dakika)
   const [longBreak, setLongBreak] = useState(15);  // longBreak: Uzun mola süresi (dakika)
@@ -19,9 +22,22 @@ export default function CycleSettingsModal({navigation}) {
   // Load settings when modal opens
   useEffect(() => {
     loadSettings();
-  }, []);
+  }, [taskName]);
 
   const loadSettings = async () => {
+    // If taskName is provided, try to load task-specific settings
+    if (taskName && taskName.trim()) {
+      const taskSettings = await sessionStorage.getTaskSettings(taskName);
+      if (taskSettings) {
+        setFocus(taskSettings.focus);
+        setShortBreak(taskSettings.shortBreak);
+        setLongBreak(taskSettings.longBreak);
+        setSessions(taskSettings.sessionsBeforeLongBreak);
+        return;
+      }
+    }
+    
+    // Fall back to global settings
     const settings = await sessionStorage.getSettings();
     setFocus(settings.focus);
     setShortBreak(settings.shortBreak);
@@ -36,9 +52,18 @@ export default function CycleSettingsModal({navigation}) {
       longBreak,
       sessionsBeforeLongBreak: sessions,
     };
-    await sessionStorage.saveSettings(settings);
+    
+    // Save task-specific settings if taskName is provided, otherwise save globally
+    if (taskName && taskName.trim()) {
+      await sessionStorage.saveSettings(settings, taskName);
+    } else {
+      await sessionStorage.saveSettings(settings);
+    }
+    
     navigation.goBack();
   };
+
+  const styles = getStyles(theme);
 
   return (
     // overlay: Modal'ın arka planı (yarı saydam siyah)
@@ -50,7 +75,7 @@ export default function CycleSettingsModal({navigation}) {
           <View style={styles.header}>
             <Text style={styles.title}>Cycle Settings</Text>
             <TouchableOpacity onPress={() => navigation.goBack()} style={styles.closeBtn}>
-              <FontAwesome name="close" size={20} color="#fff" />
+              <FontAwesome name="close" size={20} color={theme.colors.text} />
             </TouchableOpacity>
           </View>
 
@@ -136,7 +161,7 @@ export default function CycleSettingsModal({navigation}) {
 
   );
 }
-const styles = StyleSheet.create({
+const getStyles = (theme) => StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.6)",
@@ -144,7 +169,7 @@ const styles = StyleSheet.create({
   },
 
   container: {
-    backgroundColor: "#0E1525",
+    backgroundColor: theme.colors.background,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 20,
@@ -158,7 +183,7 @@ const styles = StyleSheet.create({
   },
 
   title: {
-    color: "#fff",
+    color: theme.colors.text,
     fontSize: 18,
     fontWeight: "700",
   },
@@ -169,7 +194,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "#2A2E35",
+    backgroundColor: theme.colors.surfaceSecondary,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -185,12 +210,12 @@ const styles = StyleSheet.create({
   },
 
   label: {
-    color: "#fff",
+    color: theme.colors.text,
     fontSize: 15,
   },
 
   value: {
-    color: "#A0A4AB",
+    color: theme.colors.textSecondary,
     fontSize: 14,
   },
 

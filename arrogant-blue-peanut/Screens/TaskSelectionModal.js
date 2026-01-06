@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import {
   View,
   Text,
@@ -8,8 +8,10 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { sessionStorage } from "../utils/sessionStorage";
+import { ThemeContext } from "../context/ThemeContext";
 
 export default function TaskSelectionModal({ navigation, route }) {
+  const theme = useContext(ThemeContext);
   const { currentTaskName, onTaskSelect } = route.params || {};
   const [tasks, setTasks] = useState([]);
 
@@ -22,9 +24,11 @@ export default function TaskSelectionModal({ navigation, route }) {
     setTasks(loadedTasks);
   };
 
+  const styles = getStyles(theme);
   const activeTasks = tasks.filter((task) => !task.completed);
 
   const handleSelectTask = (taskText) => {
+    console.log('Task selected:', taskText);
     if (onTaskSelect) {
       onTaskSelect(taskText);
     }
@@ -37,14 +41,14 @@ export default function TaskSelectionModal({ navigation, route }) {
         {/* HEADER */}
         <View style={styles.header}>
           <TouchableOpacity onPress={navigation.goBack} style={styles.closeBtn}>
-            <Ionicons name="close" size={22} color="#fff" />
+            <Ionicons name="close" size={22} color={theme.colors.text} />
           </TouchableOpacity>
           <Text style={styles.title}>Select Task</Text>
           <View style={{ width: 40 }} />
         </View>
 
         {/* TASKS LIST */}
-        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="always">
           {activeTasks.length > 0 ? (
             activeTasks.map((task) => (
               <TouchableOpacity
@@ -94,7 +98,7 @@ export default function TaskSelectionModal({ navigation, route }) {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (theme) => StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.5)",
@@ -102,11 +106,12 @@ const styles = StyleSheet.create({
   },
 
   sheet: {
-    backgroundColor: "#0E1525",
+    backgroundColor: theme.colors.background,
     borderTopLeftRadius: 25,
     borderTopRightRadius: 25,
     padding: 20,
     paddingBottom: 40,
+    flex: 1,
     maxHeight: "70%",
   },
 
@@ -121,39 +126,40 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#1F1F23",
+    backgroundColor: theme.colors.surfaceSecondary,
     justifyContent: "center",
     alignItems: "center",
   },
 
   title: {
-    color: "#fff",
+    color: theme.colors.text,
     fontSize: 18,
     fontWeight: "700",
   },
 
   scrollView: {
     flex: 1,
+    minHeight: 150,
   },
 
   taskItem: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#151B2B",
+    backgroundColor: theme.colors.surface,
     borderRadius: 18,
     padding: 18,
     marginBottom: 12,
   },
 
   taskItemSelected: {
-    backgroundColor: "#1F2A3A",
+    backgroundColor: theme.colors.surfaceSecondary,
     borderWidth: 1,
     borderColor: "#4EC8C0",
   },
 
   taskText: {
-    color: "#fff",
+    color: theme.colors.text,
     fontSize: 15,
     flex: 1,
   },
@@ -166,12 +172,12 @@ const styles = StyleSheet.create({
   customTaskItem: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#151B2B",
+    backgroundColor: theme.colors.surface,
     borderRadius: 18,
     padding: 18,
     marginTop: 8,
     borderWidth: 1,
-    borderColor: "#2A2E35",
+    borderColor: theme.colors.border,
     borderStyle: "dashed",
   },
 
@@ -188,14 +194,14 @@ const styles = StyleSheet.create({
   },
 
   emptyText: {
-    color: "#fff",
+    color: theme.colors.text,
     fontSize: 16,
     fontWeight: "600",
     marginBottom: 8,
   },
 
   emptySubtext: {
-    color: "#7A7F87",
+    color: theme.colors.textSecondary,
     fontSize: 14,
     textAlign: "center",
   },

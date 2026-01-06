@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useContext } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Alert } from 'react-native';
 // SVG kütüphanesi
 import Svg, { Circle, G } from 'react-native-svg'; 
 
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
-import { sessionStorage } from '../utils/sessionStorage'; 
+import { sessionStorage } from '../utils/sessionStorage';
+import { ThemeContext } from '../context/ThemeContext';
 
 
 
@@ -23,12 +24,13 @@ const secondaryColor = '#2A2E35'; // Koyu arka plan halka rengi
 
 
 export default function TimerScreen({ navigation }) {
+  const theme = useContext(ThemeContext);
   const [time, setTime] = useState(initialTimeInSeconds); // kalan süre
   const [isRunning, setIsRunning] = useState(false);  // timer aktif mi
   const [progress, setProgress] = useState(1);  // ilerleme çubuğu için 0-1
   const [tasksVisible, setTasksVisible] = useState(false);
   const [sessionType, setSessionType] = useState('focus'); // 'focus' | 'shortBreak' | 'longBreak'
-  const [taskName, setTaskName] = useState('Studying Mobile Programming');
+  const [taskName, setTaskName] = useState('');
   const [initialDuration, setInitialDuration] = useState(initialTimeInSeconds / 60); // in minutes
 
   // Load saved task name on mount
@@ -45,8 +47,19 @@ export default function TimerScreen({ navigation }) {
     // If a task is selected, use it. Otherwise keep current task name (custom)
     if (selectedTaskName && selectedTaskName.trim()) {
       setTaskName(selectedTaskName.trim());
+      // Load task-specific settings when task is selected
+      loadTaskSettings(selectedTaskName.trim());
     }
     // If empty string is passed (custom task selected), keep current task name
+  };
+
+  const loadTaskSettings = async (taskName) => {
+    const taskSettings = await sessionStorage.getTaskSettings(taskName);
+    if (taskSettings) {
+      setSettings(taskSettings);
+      updateTimerForSessionType(sessionType, taskSettings);
+      console.log('Loaded task-specific settings for:', taskName, taskSettings);
+    }
   };
   const [settings, setSettings] = useState({
     focus: 25,
@@ -67,6 +80,22 @@ export default function TimerScreen({ navigation }) {
   useEffect(() => {
     const initializeSettings = async () => {
       const loadedSettings = await sessionStorage.getSettings();
+      
+      // Load task-specific settings if a task is selected
+      if (taskName && taskName.trim()) {
+        const taskSettings = await sessionStorage.getTaskSettings(taskName);
+        if (taskSettings) {
+          setSettings(taskSettings);
+          previousSettings.current = taskSettings;
+          if (!settingsInitialized.current) {
+            updateTimerForSessionType(sessionType, taskSettings);
+            settingsInitialized.current = true;
+          } else if (!isRunning) {
+            updateTimerForSessionType(sessionType, taskSettings);
+          }
+          return;
+        }
+      }
       
       // Only update timer if settings have actually changed
       const settingsChanged = !previousSettings.current || 
@@ -103,7 +132,7 @@ export default function TimerScreen({ navigation }) {
     });
 
     return unsubscribe;
-  }, [navigation, sessionType, isRunning, updateTimerForSessionType]);
+  }, [navigation, sessionType, isRunning, updateTimerForSessionType, taskName]);
 
 
   // Update timer duration based on session type and settings
@@ -398,6 +427,8 @@ export default function TimerScreen({ navigation }) {
   const center = svgSize / 2;
 
 
+  const styles = getStyles(theme);
+
   return (
     <View style={styles.container}>
 
@@ -411,7 +442,7 @@ export default function TimerScreen({ navigation }) {
   aria-label="İstatistikler"
 >
           
-          <FontAwesome name="bar-chart" size={28} color="#fff" /> 
+          <FontAwesome name="bar-chart" size={28} color={theme.colors.text} /> 
         </TouchableOpacity>
 
         {/* Orta: Başlık (Mutlak Konumlandırma) */}
@@ -424,7 +455,7 @@ export default function TimerScreen({ navigation }) {
   aria-label="Ayarlar"
 >
 
-          <FontAwesome name="cog" size={28} color="#fff" /> 
+          <FontAwesome name="cog" size={28} color={theme.colors.text} /> 
         </TouchableOpacity>
       </View>
 
@@ -490,16 +521,16 @@ export default function TimerScreen({ navigation }) {
           <Text style={styles.dropdownText} numberOfLines={1}>
             {taskName}
           </Text>
-          <FontAwesome name="chevron-down" size={18} color="#fff" />
+          <FontAwesome name="chevron-down" size={18} color={theme.colors.text} />
         </TouchableOpacity>
 
         {/* SETTINGS BUTTON */}
         <TouchableOpacity
           style={styles.settingsBtn}
           aria-label="Timer Settings"
-          onPress={() => navigation.navigate("CycleModal")}
+          onPress={() => navigation.navigate("CycleModal", { taskName })}
         >
-          <FontAwesome name="cog" size={18} color="#fff" />
+          <FontAwesome name="cog" size={18} color={theme.colors.text} />
         </TouchableOpacity>
       </View>
 
@@ -512,7 +543,7 @@ export default function TimerScreen({ navigation }) {
           aria-label="Zamanlayıcıyı Sıfırla"
         >
          
-          <FontAwesome name="refresh" size={26} color="#fff" /> 
+          <FontAwesome name="refresh" size={26} color={theme.colors.text} /> 
         </TouchableOpacity>
 
         {/* Play/Pause Button (Turkuaz Halka/Dolgu, Beyaz İkon) */}
@@ -525,7 +556,7 @@ export default function TimerScreen({ navigation }) {
           <FontAwesome 
             name={isRunning ? "pause" : "play"} 
             size={40} 
-            color="#fff" 
+            color={theme.colors.text} 
             style={isRunning ? {} : { marginLeft: 4 }}
           />
         </TouchableOpacity>
@@ -537,14 +568,14 @@ export default function TimerScreen({ navigation }) {
           aria-label="Switch Session"
         >
         
-            <FontAwesome name="hourglass-start" size={26} color="#fff" /> 
+            <FontAwesome name="hourglass-start" size={26} color={theme.colors.text} /> 
         </TouchableOpacity>
       </View>
 
       {/* TO-DO LIST NAV (YAPILACAKLAR LİSTESİ NAVİGASYONU) */}
       <TouchableOpacity style={styles.todoNav} aria-label="Yapılacaklar listesini aç"  onPress={() => navigation.navigate("TasksModal")}>
     
-        <FontAwesome name="list" size={20} color="#fff" /> 
+        <FontAwesome name="list" size={20} color={theme.colors.text} /> 
         <Text style={styles.todoText}>To-Do List</Text>
       </TouchableOpacity>
 
@@ -560,10 +591,10 @@ export default function TimerScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (theme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: darkBg,
+    backgroundColor: theme.colors.background,
     alignItems: 'center',
     paddingTop: 60,
   },
@@ -582,7 +613,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 22,
     fontWeight: '700',
-    color: '#fff',
+    color: theme.colors.text,
     zIndex: 0, 
   },
   iconButton: {
@@ -600,7 +631,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     fontSize: 42,
     fontWeight: 'bold',
-    color: '#fff',
+    color: theme.colors.text,
   },
   sessionLabel: {
     marginTop: 35,
@@ -618,7 +649,7 @@ const styles = StyleSheet.create({
   },
   dropdown: {
     flex: 1,
-    backgroundColor: darkCard,
+    backgroundColor: theme.colors.surface,
     borderRadius: 30,
     paddingVertical: 15,
     paddingHorizontal: 20,
@@ -627,7 +658,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   dropdownText: {
-    color: '#fff',
+    color: theme.colors.text,
     fontSize: 16,
     flex: 1,
     marginRight: 10,
@@ -635,7 +666,7 @@ const styles = StyleSheet.create({
   settingsBtn: {
     width: 50,
     height: 50,
-    backgroundColor: darkCard,
+    backgroundColor: theme.colors.surface,
     borderRadius: 25,
     justifyContent: 'center',
     alignItems: 'center',
@@ -648,7 +679,7 @@ const styles = StyleSheet.create({
   controlBtn: {
     width: 60,
     height: 60,
-    backgroundColor: darkControl,
+    backgroundColor: theme.colors.surfaceSecondary,
     borderRadius: 30,
     justifyContent: 'center',
     alignItems: 'center',
@@ -675,9 +706,9 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: darkControl,
+    backgroundColor: theme.colors.surfaceSecondary,
     marginHorizontal: 17.5,
-    borderColor: darkControl,
+    borderColor: theme.colors.surfaceSecondary,
     borderWidth: 3,
   },
   todoNav: {
@@ -686,7 +717,7 @@ const styles = StyleSheet.create({
     marginTop: 35,
   },
   todoText: {
-    color: '#fff',
+    color: theme.colors.text,
     marginLeft: 8,
     fontSize: 15,
   },

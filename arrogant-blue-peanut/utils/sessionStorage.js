@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 
 const SESSIONS_KEY = '@focusflow_sessions';
 const SETTINGS_KEY = '@focusflow_settings';
@@ -246,13 +247,46 @@ export const sessionStorage = {
     }
   },
 
-  async saveSettings(settings) {
+  async saveSettings(settings, taskName = null) {
     try {
-      await AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+      if (taskName) {
+        // Save task-specific settings
+        const allSettings = await AsyncStorage.getItem(SETTINGS_KEY);
+        const parsed = allSettings ? JSON.parse(allSettings) : {};
+        
+        // Ensure taskSettings object exists
+        if (!parsed.taskSettings) {
+          parsed.taskSettings = {};
+        }
+        
+        parsed.taskSettings[taskName] = settings;
+        await AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify(parsed));
+        console.log('Task-specific settings saved for:', taskName, settings);
+      } else {
+        // Save global settings
+        await AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+      }
       return true;
     } catch (error) {
       console.error('Error saving settings:', error);
       return false;
+    }
+  },
+
+  async getTaskSettings(taskName) {
+    try {
+      const data = await AsyncStorage.getItem(SETTINGS_KEY);
+      if (data) {
+        const parsed = JSON.parse(data);
+        if (parsed.taskSettings && parsed.taskSettings[taskName]) {
+          console.log('Loaded task-specific settings for:', taskName, parsed.taskSettings[taskName]);
+          return parsed.taskSettings[taskName];
+        }
+      }
+      return null;
+    } catch (error) {
+      console.error('Error getting task settings:', error);
+      return null;
     }
   },
 
@@ -261,6 +295,7 @@ export const sessionStorage = {
   async getTasks() {
     try {
       const data = await AsyncStorage.getItem(TASKS_KEY);
+      console.log(`Platform: ${Platform.OS}, Raw data:`, data);
       return data ? JSON.parse(data) : [];
     } catch (error) {
       console.error('Error getting tasks:', error);
@@ -318,6 +353,17 @@ export const sessionStorage = {
       return true;
     } catch (error) {
       console.error('Error toggling task completion:', error);
+      return false;
+    }
+  },
+
+  // Clear all tasks
+  async clearAllTasks() {
+    try {
+      await AsyncStorage.removeItem(TASKS_KEY);
+      return true;
+    } catch (error) {
+      console.error('Error clearing tasks:', error);
       return false;
     }
   },

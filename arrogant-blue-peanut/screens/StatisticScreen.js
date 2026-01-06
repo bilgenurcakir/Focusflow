@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useContext } from "react";
 import {
   View,
   Text,
@@ -9,8 +9,10 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import Svg, { Circle } from "react-native-svg";
 import { sessionStorage } from "../utils/sessionStorage";
+import { ThemeContext } from "../context/ThemeContext";
 
 export default function StatisticsScreen({navigation}) {
+  const theme = useContext(ThemeContext);
   const [statistics, setStatistics] = useState({
     totalPomodoros: 0,
     totalFocusHours: 0,
@@ -113,13 +115,14 @@ export default function StatisticsScreen({navigation}) {
   };
 
   const progress = statistics.focusPercentage / 100; // Convert percentage to ratio
+  const styles = getStyles(theme);
 
   return ( //showsVerticalScrollIndicator=kaydırma çubuğunu gizle
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}> 
       {/* HEADER */}
       <View style={styles.header}>
        <TouchableOpacity onPress={() => navigation.navigate("Timer")}>
-  <Ionicons name="chevron-back" size={26} color="#fff" />
+  <Ionicons name="chevron-back" size={26} color={theme.colors.text} />
 </TouchableOpacity>
         <Text style={styles.headerTitle}>Statistics</Text>
         <View style={{ width: 26 }} />
@@ -127,9 +130,9 @@ export default function StatisticsScreen({navigation}) {
 
       {/* TOP STATS */}
       <View style={styles.statsRow}>
-        <StatCard title="Total Pomodoros" value={formatNumber(statistics.totalPomodoros)} />
-        <StatCard title="Total Focus Time" value={formatDuration(statistics.totalFocusMinutes)} />
-        <StatCard title="Longest Streak" value={`${statistics.longestStreak}d`} />
+        <StatCard title="Total Pomodoros" value={formatNumber(statistics.totalPomodoros)} styles={styles} />
+        <StatCard title="Total Focus Time" value={formatDuration(statistics.totalFocusMinutes)} styles={styles} />
+        <StatCard title="Longest Streak" value={`${statistics.longestStreak}d`} styles={styles} />
       </View>
 
       {/* WEEKLY PROGRESS */}
@@ -203,11 +206,13 @@ export default function StatisticsScreen({navigation}) {
             color="#4EC8C0" 
             label="Focus Time" 
             value={formatDuration(statistics.totalFocusMinutes)} 
+            styles={styles}
           />
           <LegendItem 
             color="#2A2E35" 
             label="Break Time" 
             value={formatDuration(statistics.totalBreakMinutes)} 
+            styles={styles}
           />
         </View>
       </View>
@@ -223,6 +228,7 @@ export default function StatisticsScreen({navigation}) {
             time={`${session.duration} min`}
             date={formatDate(session.timestamp)}
             icon={getSessionIcon(session.type)}
+            styles={styles}
           />
         ))
       ) : (
@@ -247,9 +253,9 @@ export default function StatisticsScreen({navigation}) {
 /* ---------- COMPONENTS ---------- */
 
 // StatCard: İstatistik kartı componenti
-// { title, value }: component'e gönderilen prop'lar
-// Örnek: <StatCard title="Total Pomodoros" value="1,204" />
-const StatCard = ({ title, value }) => (
+// { title, value, styles }: component'e gönderilen prop'lar
+// Örnek: <StatCard title="Total Pomodoros" value="1,204" styles={styles} />
+const StatCard = ({ title, value, styles }) => (
   <View style={styles.statCard}>
     <Text style={styles.statTitle}>{title}</Text>
     <Text style={styles.statValue}>{value}</Text>
@@ -257,8 +263,8 @@ const StatCard = ({ title, value }) => (
 );
 
 // LegendItem: Legend elemanı (renkli nokta + etiket + değer)
-// { color, label, value }: component'e gönderilen prop'lar
-const LegendItem = ({ color, label, value }) => (
+// { color, label, value, styles }: component'e gönderilen prop'lar
+const LegendItem = ({ color, label, value, styles }) => (
   <View style={styles.legendItem}>
     <View style={[styles.dot, { backgroundColor: color }]} />
     <View>
@@ -269,8 +275,8 @@ const LegendItem = ({ color, label, value }) => (
 );
 
 // SessionItem: Seans elemanı (ikon + başlık + tarih + süre)
-// { title, date, time, icon }: component'e gönderilen prop'lar
-const SessionItem = ({ title, date, time, icon }) => (
+// { title, date, time, icon, styles }: component'e gönderilen prop'lar
+const SessionItem = ({ title, date, time, icon, styles }) => (
   <View style={styles.sessionItem}>
     <View style={styles.sessionIcon}>
       <Ionicons name={icon} size={22} color="#4EC8C0" />
@@ -287,10 +293,10 @@ const SessionItem = ({ title, date, time, icon }) => (
 
 /* ---------- STYLES ---------- */
 
-const styles = StyleSheet.create({
+const getStyles = (theme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0E1525",
+    backgroundColor: theme.colors.background,
     paddingHorizontal: 20,
   },
 
@@ -302,7 +308,7 @@ const styles = StyleSheet.create({
   },
 
   headerTitle: {
-    color: "#fff",
+    color: theme.colors.text,
     fontSize: 20,
     fontWeight: "700",
   },
@@ -315,20 +321,20 @@ const styles = StyleSheet.create({
 
   statCard: {
     width: "31%",
-    backgroundColor: "#151B2B",
+    backgroundColor: theme.colors.surface,
     borderRadius: 16,
     paddingVertical: 18,
     alignItems: "center",
   },
 
   statTitle: {
-    color: "#A0A4AB",
+    color: theme.colors.textSecondary,
     fontSize: 12,
     textAlign: "center",
   },
 
   statValue: {
-    color: "#fff",
+    color: theme.colors.text,
     fontSize: 22,
     fontWeight: "700",
     marginTop: 6,
@@ -336,14 +342,14 @@ const styles = StyleSheet.create({
 
   sectionTitle: {
     marginTop: 30,
-    color: "#A0A4AB",
+    color: theme.colors.textSecondary,
     fontSize: 12,
     letterSpacing: 1.5,
   },
 
   weeklyBox: {
     height: 140,
-    backgroundColor: "#151B2B",
+    backgroundColor: theme.colors.surface,
     borderRadius: 20,
     marginTop: 12,
     justifyContent: "flex-end",
@@ -378,12 +384,12 @@ const styles = StyleSheet.create({
   },
 
   dayText: {
-    color: "#6E737B",
+    color: theme.colors.textTertiary,
     fontSize: 12,
   },
 
   distributionBox: {
-    backgroundColor: "#151B2B",
+    backgroundColor: theme.colors.surface,
     borderRadius: 20,
     marginTop: 12,
     padding: 20,
@@ -397,13 +403,13 @@ const styles = StyleSheet.create({
   },
 
   percentText: {
-    color: "#fff",
+    color: theme.colors.text,
     fontSize: 26,
     fontWeight: "700",
   },
 
   percentSub: {
-    color: "#A0A4AB",
+    color: theme.colors.textSecondary,
     fontSize: 12,
   },
 
@@ -426,19 +432,19 @@ const styles = StyleSheet.create({
   },
 
   legendLabel: {
-    color: "#fff",
+    color: theme.colors.text,
     fontSize: 14,
   },
 
   legendValue: {
-    color: "#A0A4AB",
+    color: theme.colors.textSecondary,
     fontSize: 12,
   },
 
   sessionItem: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#151B2B",
+    backgroundColor: theme.colors.surface,
     borderRadius: 16,
     padding: 15,
     marginTop: 12,
@@ -448,26 +454,26 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#1F1F23",
+    backgroundColor: theme.colors.surfaceSecondary,
     justifyContent: "center",
     alignItems: "center",
     marginRight: 12,
   },
 
   sessionTitle: {
-    color: "#fff",
+    color: theme.colors.text,
     fontSize: 15,
     fontWeight: "600",
   },
 
   sessionDate: {
-    color: "#A0A4AB",
+    color: theme.colors.textSecondary,
     fontSize: 12,
     marginTop: 2,
   },
 
   sessionTime: {
-    color: "#fff",
+    color: theme.colors.text,
     fontSize: 14,
     fontWeight: "600",
   },
@@ -484,13 +490,13 @@ const styles = StyleSheet.create({
   },
 
   shareText: {
-    color: "#0E1525",
+    color: theme.darkMode ? "#0E1525" : "#000",
     fontSize: 16,
     fontWeight: "700",
   },
 
   emptyState: {
-    backgroundColor: "#151B2B",
+    backgroundColor: theme.colors.surface,
     borderRadius: 16,
     padding: 30,
     alignItems: "center",
@@ -498,14 +504,14 @@ const styles = StyleSheet.create({
   },
 
   emptyStateText: {
-    color: "#fff",
+    color: theme.colors.text,
     fontSize: 16,
     fontWeight: "600",
     marginBottom: 8,
   },
 
   emptyStateSubtext: {
-    color: "#A0A4AB",
+    color: theme.colors.textSecondary,
     fontSize: 12,
     textAlign: "center",
   },
