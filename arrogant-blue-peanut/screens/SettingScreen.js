@@ -1,15 +1,9 @@
-import React, { useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Switch,
-} from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import Slider from '@react-native-community/slider';
+import React, { useState } from 'react';
 
-export default function SettingsScreen({navigation}) {
+import { View, Text, StyleSheet, TouchableOpacity, Switch } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { Slider } from '@miblanchard/react-native-slider';
+export default function SettingsScreen({ navigation }) {
   const [darkMode, setDarkMode] = useState(true);
   const [volume, setVolume] = useState(0.7);
 
@@ -17,10 +11,9 @@ export default function SettingsScreen({navigation}) {
     <View style={styles.container}>
       {/* HEADER */}
       <View style={styles.header}>
-       <TouchableOpacity
-  style={styles.backBtn}
-  onPress={() => navigation.goBack()}
->
+        <TouchableOpacity
+          style={styles.backBtn}
+          onPress={() => navigation.goBack()}>
           <Ionicons name="chevron-back" size={24} color="#fff" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Settings</Text>
@@ -40,7 +33,12 @@ export default function SettingsScreen({navigation}) {
       {/* NOTIFICATIONS */}
       <Text style={styles.sectionTitle}>NOTIFICATIONS</Text>
       <View style={styles.card}>
-        <SettingRow icon="notifications-outline" label="Alert Sound" value="Chime" showArrow />
+        <SettingRow
+          icon="notifications-outline"
+          label="Alert Sound"
+          value="Chime"
+          showArrow
+        />
         <Divider />
         <View style={styles.row}>
           <View style={styles.rowLeft}>
@@ -48,14 +46,14 @@ export default function SettingsScreen({navigation}) {
             <Text style={styles.rowLabel}>Volume</Text>
           </View>
           <Slider
-            style={{ width: 140 }}          // 140 piksel genişlik
-            minimumValue={0}                // Minimum: 0 (sessiz)
-            maximumValue={1}                // Maximum: 1 (tam ses)
-            value={volume}                  // Mevcut değer: volume state'i
-            onValueChange={setVolume}       // Değer değişince setVolume çalışır
+            style={{ width: 140 }} // 140 piksel genişlik
+            minimumValue={0} // Minimum: 0 (sessiz)
+            maximumValue={1} // Maximum: 1 (tam ses)
+            value={volume} // Mevcut değer: volume state'i
+            onValueChange={setVolume} // Değer değişince setVolume çalışır
             minimumTrackTintColor="#4EC8C0" // Sol taraf rengi: turkuaz
             maximumTrackTintColor="#2A2E35" // Sağ taraf rengi: gri
-            thumbTintColor="#4EC8C0"        // Kaydırıcı rengi: turkuaz
+            thumbTintColor="#4EC8C0" // Kaydırıcı rengi: turkuaz
           />
         </View>
       </View>
@@ -69,14 +67,14 @@ export default function SettingsScreen({navigation}) {
             <Text style={styles.rowLabel}>Dark Mode</Text>
           </View>
           <Switch
-           value={darkMode}                // Mevcut değer: darkMode state'i
-            onValueChange={setDarkMode}     // Değer değişince setDarkMode çalışır
+            value={darkMode} // Mevcut değer: darkMode state'i
+            onValueChange={setDarkMode} // Değer değişince setDarkMode çalışır
             // trackColor: ray renkleri
-            trackColor={{ 
-              false: "#2A2E35",             // Kapalıyken: gri
-              true: "#4EC8C0"               // Açıkken: turkuaz
+            trackColor={{
+              false: '#2A2E35', // Kapalıyken: gri
+              true: '#4EC8C0', // Açıkken: turkuaz
             }}
-            thumbColor="#fff"               // Kaydırıcı rengi: beyaz
+            thumbColor="#fff" // Kaydırıcı rengi: beyaz
           />
         </View>
       </View>
@@ -93,7 +91,7 @@ export default function SettingsScreen({navigation}) {
         <View style={styles.row}>
           <View style={styles.rowLeft}>
             <Ionicons name="trash-outline" size={22} color="#FF6B6B" />
-            <Text style={[styles.rowLabel, { color: "#FF6B6B" }]}>
+            <Text style={[styles.rowLabel, { color: '#FF6B6B' }]}>
               Clear All Data
             </Text>
           </View>
@@ -127,77 +125,77 @@ const Divider = () => <View style={styles.divider} />;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0E1525",
+    backgroundColor: '#0E1525',
     paddingHorizontal: 20,
   },
 
   header: {
     marginTop: 60,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
 
   backBtn: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#1F1F23",
-    justifyContent: "center",
-    alignItems: "center",
+    backgroundColor: '#1F1F23',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 
   headerTitle: {
-    color: "#fff",
+    color: '#fff',
     fontSize: 20,
-    fontWeight: "700",
+    fontWeight: '700',
   },
 
   sectionTitle: {
     marginTop: 30,
-    color: "#A0A4AB",
+    color: '#A0A4AB',
     fontSize: 12,
     letterSpacing: 1.5,
   },
 
   card: {
-    backgroundColor: "#151B2B",
+    backgroundColor: '#151B2B',
     borderRadius: 20,
     marginTop: 12,
     paddingHorizontal: 15,
   },
 
   row: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingVertical: 18,
   },
 
   rowLeft: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
   },
 
   rowLabel: {
-    color: "#fff",
+    color: '#fff',
     fontSize: 16,
     marginLeft: 12,
   },
 
   rowRight: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
   },
 
   rowValue: {
-    color: "#A0A4AB",
+    color: '#A0A4AB',
     fontSize: 14,
     marginRight: 6,
   },
 
   divider: {
     height: 1,
-    backgroundColor: "#1F1F23",
+    backgroundColor: '#1F1F23',
   },
 });

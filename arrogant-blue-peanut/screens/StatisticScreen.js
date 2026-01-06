@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -8,13 +8,111 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import Svg, { Circle } from "react-native-svg";
+import { sessionStorage } from "../utils/sessionStorage";
 
 export default function StatisticsScreen({navigation}) {
+  const [statistics, setStatistics] = useState({
+    totalPomodoros: 0,
+    totalFocusHours: 0,
+    totalFocusMinutes: 0,
+    longestStreak: 0,
+    focusPercentage: 0,
+    totalBreakMinutes: 0,
+    weeklyBreakdown: {},
+  });
+  const [recentSessions, setRecentSessions] = useState([]);
 
   const radius = 60; // Dairenin yarıçapı (piksel)
   const stroke = 14; // Çizgi kalınlığı
   const circumference = 2 * Math.PI * radius; // Çevrenin uzunluğu (matematik)
-  const progress = 0.75;          // İlerleme yüzdesi (%75)
+
+  // Load statistics when screen is focused
+  useEffect(() => {
+    loadStatistics();
+    
+    // Reload when screen comes into focus
+    const unsubscribe = navigation.addListener('focus', () => {
+      loadStatistics();
+    });
+
+    return unsubscribe;
+  }, [navigation]);
+
+  const loadStatistics = async () => {
+    const stats = await sessionStorage.getStatistics();
+    setStatistics(stats);
+    
+    const recent = await sessionStorage.getRecentSessions(10);
+    setRecentSessions(recent);
+  };
+
+  // Format date for display
+  const formatDate = (timestamp) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const sessionDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    
+    const diffTime = today - sessionDate;
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    
+    const timeStr = date.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+    
+    if (diffDays === 0) {
+      return `Today, ${timeStr}`;
+    } else if (diffDays === 1) {
+      return `Yesterday, ${timeStr}`;
+    } else if (diffDays < 7) {
+      return date.toLocaleDateString('en-US', { weekday: 'long', hour: 'numeric', minute: '2-digit' });
+    } else {
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+    }
+  };
+
+  // Format duration
+  const formatDuration = (minutes) => {
+    if (minutes < 60) {
+      return `${minutes} min`;
+    }
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+  };
+
+  // Get session icon based on type
+  const getSessionIcon = (type) => {
+    switch (type) {
+      case 'focus':
+        return 'stopwatch-outline';
+      case 'shortBreak':
+      case 'longBreak':
+        return 'cafe-outline';
+      default:
+        return 'stopwatch-outline';
+    }
+  };
+
+  // Get session title based on type
+  const getSessionTitle = (session) => {
+    if (session.type === 'focus') {
+      return session.taskName || 'Focus Session';
+    } else if (session.type === 'shortBreak') {
+      return 'Short Break';
+    } else if (session.type === 'longBreak') {
+      return 'Long Break';
+    }
+    return 'Session';
+  };
+
+  // Format numbers with commas
+  const formatNumber = (num) => {
+    return num.toLocaleString();
+  };
+
+  const progress = statistics.focusPercentage / 100; // Convert percentage to ratio
 
   return ( //showsVerticalScrollIndicator=kaydırma çubuğunu gizle
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}> 
@@ -29,20 +127,39 @@ export default function StatisticsScreen({navigation}) {
 
       {/* TOP STATS */}
       <View style={styles.statsRow}>
-        <StatCard title="Total Pomodoros" value="1,204" />
-        <StatCard title="Total Focus Time" value="502h" />
-        <StatCard title="Longest Streak" value="32d" />
+        <StatCard title="Total Pomodoros" value={formatNumber(statistics.totalPomodoros)} />
+        <StatCard title="Total Focus Time" value={formatDuration(statistics.totalFocusMinutes)} />
+        <StatCard title="Longest Streak" value={`${statistics.longestStreak}d`} />
       </View>
 
       {/* WEEKLY PROGRESS */}
       <Text style={styles.sectionTitle}>WEEKLY PROGRESS</Text>
       <View style={styles.weeklyBox}>
         <View style={styles.daysRow}>
-          {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => (
-            <Text key={day} style={styles.dayText}>
-              {day}
-            </Text>
-          ))}
+          {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => {
+            const minutes = statistics.weeklyBreakdown[day] || 0;
+            const allMinutes = Object.values(statistics.weeklyBreakdown);
+            const maxMinutes = allMinutes.length > 0 ? Math.max(...allMinutes, 1) : 1;
+            const heightPercent = maxMinutes > 0 ? (minutes / maxMinutes) * 100 : 0;
+            const barHeight = Math.max(heightPercent, minutes > 0 ? 8 : 0); // Minimum 8% if there's data
+            
+            return (
+              <View key={day} style={styles.dayColumn}>
+                <View style={styles.barContainer}>
+                  <View
+                    style={[
+                      styles.bar,
+                      { 
+                        height: `${barHeight}%`,
+                        opacity: minutes > 0 ? 1 : 0.3,
+                      },
+                    ]}
+                  />
+                </View>
+                <Text style={styles.dayText}>{day}</Text>
+              </View>
+            );
+          })}
         </View>
       </View>
 
@@ -77,43 +194,43 @@ export default function StatisticsScreen({navigation}) {
         </Svg>
 
         <View style={styles.percentCenter}>
-          <Text style={styles.percentText}>75%</Text>
+          <Text style={styles.percentText}>{Math.round(statistics.focusPercentage)}%</Text>
           <Text style={styles.percentSub}>Focus</Text>
         </View>
 
         <View style={styles.legend}>
-          <LegendItem color="#4EC8C0" label="Focus Time" value="502h" />
-          <LegendItem color="#2A2E35" label="Break Time" value="167h" />
+          <LegendItem 
+            color="#4EC8C0" 
+            label="Focus Time" 
+            value={formatDuration(statistics.totalFocusMinutes)} 
+          />
+          <LegendItem 
+            color="#2A2E35" 
+            label="Break Time" 
+            value={formatDuration(statistics.totalBreakMinutes)} 
+          />
         </View>
       </View>
 
       {/* RECENT SESSIONS */}
       <Text style={styles.sectionTitle}>RECENT SESSIONS</Text>
 
-      <SessionItem
-        title="Design System Documentation"
-        time="25 min"
-        date="Today, 2:45 PM"
-        icon="stopwatch-outline"
-      />
-      <SessionItem
-        title="Short Break"
-        time="5 min"
-        date="Today, 2:20 PM"
-        icon="cafe-outline"
-      />
-      <SessionItem
-        title="Develop Login Screen UI"
-        time="25 min"
-        date="Today, 1:55 PM"
-        icon="stopwatch-outline"
-      />
-      <SessionItem
-        title="Team Stand-up Meeting"
-        time="15 min"
-        date="Yesterday, 9:00 AM"
-        icon="stopwatch-outline"
-      />
+      {recentSessions.length > 0 ? (
+        recentSessions.map((session) => (
+          <SessionItem
+            key={session.id}
+            title={getSessionTitle(session)}
+            time={`${session.duration} min`}
+            date={formatDate(session.timestamp)}
+            icon={getSessionIcon(session.type)}
+          />
+        ))
+      ) : (
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyStateText}>No sessions yet</Text>
+          <Text style={styles.emptyStateSubtext}>Complete your first timer session to see statistics here!</Text>
+        </View>
+      )}
 
       {/* SHARE BUTTON */}
   <TouchableOpacity
@@ -236,6 +353,28 @@ const styles = StyleSheet.create({
   daysRow: {
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "flex-end",
+    height: "100%",
+  },
+
+  dayColumn: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "flex-end",
+    height: "100%",
+  },
+
+  barContainer: {
+    width: "80%",
+    height: 80,
+    justifyContent: "flex-end",
+    marginBottom: 8,
+  },
+
+  bar: {
+    width: "100%",
+    backgroundColor: "#4EC8C0",
+    borderRadius: 4,
   },
 
   dayText: {
@@ -348,5 +487,26 @@ const styles = StyleSheet.create({
     color: "#0E1525",
     fontSize: 16,
     fontWeight: "700",
+  },
+
+  emptyState: {
+    backgroundColor: "#151B2B",
+    borderRadius: 16,
+    padding: 30,
+    alignItems: "center",
+    marginTop: 12,
+  },
+
+  emptyStateText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 8,
+  },
+
+  emptyStateSubtext: {
+    color: "#A0A4AB",
+    fontSize: 12,
+    textAlign: "center",
   },
 });

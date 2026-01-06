@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -6,12 +6,61 @@ import {
   Modal,
   TouchableOpacity,
   TextInput,
+  ScrollView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { sessionStorage } from "../utils/sessionStorage";
 
 export default function MyTasksModal({ navigation }) 
 {
-  //  görevleri saklamak için state yapısı eklenecek 
+  const [tasks, setTasks] = useState([]);
+  const [newTask, setNewTask] = useState("");
+  const [completedExpanded, setCompletedExpanded] = useState(false);
+
+  // Load tasks when modal opens
+  useEffect(() => {
+    loadTasks();
+    
+    // Reload when screen comes into focus
+    const unsubscribe = navigation.addListener('focus', () => {
+      loadTasks();
+    });
+
+    return unsubscribe;
+  }, [navigation]);
+
+  const loadTasks = async () => {
+    const loadedTasks = await sessionStorage.getTasks();
+    setTasks(loadedTasks);
+  };
+
+  const handleAddTask = async () => {
+    const trimmed = newTask.trim();
+    if (!trimmed) return;
+    
+    const added = await sessionStorage.addTask(trimmed);
+    if (added) {
+      setNewTask("");
+      loadTasks(); // Reload to get updated list
+    }
+  };
+
+  const handleDeleteTask = async (id) => {
+    const deleted = await sessionStorage.deleteTask(id);
+    if (deleted) {
+      loadTasks(); // Reload to get updated list
+    }
+  };
+
+  const handleToggleComplete = async (id) => {
+    await sessionStorage.toggleTaskCompletion(id);
+    loadTasks(); // Reload to get updated list
+  };
+
+  // Separate completed and active tasks
+  const activeTasks = tasks.filter((task) => !task.completed);
+  const completedTasks = tasks.filter((task) => task.completed);
+
   return (
   
       <View style={styles.overlay}>
@@ -34,22 +83,65 @@ export default function MyTasksModal({ navigation })
               placeholder="Add new task..."
               placeholderTextColor="#7A7F87"
               style={styles.input}
+              value={newTask}
+              onChangeText={setNewTask}
+              onSubmitEditing={handleAddTask}
             />
-            <TouchableOpacity style={styles.addBtn}>
+            <TouchableOpacity style={styles.addBtn} onPress={handleAddTask}>
               <Ionicons name="add" size={26} color="#0E1525" />
             </TouchableOpacity>
           </View>
 
-          {/* TASKS */}
-          <TaskItem text="Finalize project report" />
-          <TaskItem text="Schedule team meeting for Q3" />
-          <TaskItem text="Research new design trends" />
+          {/* TASKS LIST */}
+          <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+            {/* Active Tasks */}
+            {activeTasks.map((task) => (
+              <TaskItem
+                key={task.id}
+                text={task.text}
+                completed={task.completed}
+                onToggle={() => handleToggleComplete(task.id)}
+                onDelete={() => handleDeleteTask(task.id)}
+              />
+            ))}
 
-          {/* COMPLETED */}
-          <View style={styles.completedHeader}>
-            <Text style={styles.completedText}>COMPLETED (2)</Text>
-            <Ionicons name="chevron-down" size={18} color="#A0A4AB" />
-          </View>
+            {/* COMPLETED SECTION */}
+            {completedTasks.length > 0 && (
+              <>
+                <TouchableOpacity
+                  style={styles.completedHeader}
+                  onPress={() => setCompletedExpanded(!completedExpanded)}
+                >
+                  <Text style={styles.completedText}>
+                    COMPLETED ({completedTasks.length})
+                  </Text>
+                  <Ionicons
+                    name={completedExpanded ? "chevron-up" : "chevron-down"}
+                    size={18}
+                    color="#A0A4AB"
+                  />
+                </TouchableOpacity>
+
+                {completedExpanded &&
+                  completedTasks.map((task) => (
+                    <TaskItem
+                      key={task.id}
+                      text={task.text}
+                      completed={task.completed}
+                      onToggle={() => handleToggleComplete(task.id)}
+                      onDelete={() => handleDeleteTask(task.id)}
+                    />
+                  ))}
+              </>
+            )}
+
+            {tasks.length === 0 && (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyText}>No tasks yet</Text>
+                <Text style={styles.emptySubtext}>Add your first task above!</Text>
+              </View>
+            )}
+          </ScrollView>
         </View>
       </View>
  
@@ -57,11 +149,29 @@ export default function MyTasksModal({ navigation })
 }
 
 /* ---------- COMPONENTS ---------- */
-// TaskItem: Tek bir görev elemanı, circle yerine dolu/boş toggle yapılcak
-const TaskItem = ({ text }) => (
+// TaskItem: Tek bir görev elemanı
+const TaskItem = ({ text, completed, onToggle, onDelete }) => (
   <View style={styles.taskItem}>
-    <View style={styles.circle} /> 
-    <Text style={styles.taskText}>{text}</Text>
+    <TouchableOpacity onPress={onToggle} style={styles.circleContainer}>
+      {completed ? (
+        <View style={styles.circleFilled}>
+          <Ionicons name="checkmark" size={14} color="#0E1525" />
+        </View>
+      ) : (
+        <View style={styles.circle} />
+      )}
+    </TouchableOpacity>
+    <Text
+      style={[
+        styles.taskText,
+        completed && styles.taskTextCompleted,
+      ]}
+    >
+      {text}
+    </Text>
+    <TouchableOpacity style={styles.deleteBtn} onPress={onDelete}>
+      <Ionicons name="trash-outline" size={20} color="#A0A4AB" />
+    </TouchableOpacity>
   </View>
 );
 
@@ -80,6 +190,12 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 25,
     padding: 20,
     paddingBottom: 40,
+    maxHeight: "90%",
+  },
+
+  scrollView: {
+    flex: 1,
+    maxHeight: 500,
   },
 
   header: {
@@ -134,8 +250,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#151B2B",
     borderRadius: 18,
-    padding: 18,
+    paddingVertical: 18,
+    paddingHorizontal: 16,
     marginBottom: 12,
+  },
+
+  circleContainer: {
+    marginRight: 14,
   },
 
   circle: {
@@ -144,12 +265,31 @@ const styles = StyleSheet.create({
     borderRadius: 11,
     borderWidth: 2,
     borderColor: "#2A2E35",
-    marginRight: 14,
+  },
+
+  circleFilled: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: "#4EC8C0",
+    justifyContent: "center",
+    alignItems: "center",
   },
 
   taskText: {
     color: "#fff",
     fontSize: 15,
+    flex: 1,
+  },
+
+  taskTextCompleted: {
+    color: "#7A7F87",
+    textDecorationLine: "line-through",
+  },
+
+  deleteBtn: {
+    padding: 4,
+    marginLeft: 8,
   },
 
   completedHeader: {
@@ -163,5 +303,22 @@ const styles = StyleSheet.create({
     color: "#7A7F87",
     fontSize: 12,
     letterSpacing: 1.2,
+  },
+
+  emptyState: {
+    paddingVertical: 40,
+    alignItems: "center",
+  },
+
+  emptyText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 8,
+  },
+
+  emptySubtext: {
+    color: "#7A7F87",
+    fontSize: 14,
   },
 });

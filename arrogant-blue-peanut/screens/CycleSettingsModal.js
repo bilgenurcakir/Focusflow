@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -6,14 +6,39 @@ import {
   Modal,
   TouchableOpacity,
 } from "react-native";
-import Slider from '@react-native-community/slider';
+import { Slider } from '@miblanchard/react-native-slider';
 import FontAwesome from "react-native-vector-icons/FontAwesome";
+import { sessionStorage } from "../utils/sessionStorage";
 
 export default function CycleSettingsModal({navigation}) {
   const [focus, setFocus] = useState(25);  // focus: Odak süresi (dakika)
   const [shortBreak, setShortBreak] = useState(5);// shortBreak: Kısa mola süresi (dakika)
   const [longBreak, setLongBreak] = useState(15);  // longBreak: Uzun mola süresi (dakika)
   const [sessions, setSessions] = useState(4); // sessions: Uzun mola öncesi seans sayısı
+
+  // Load settings when modal opens
+  useEffect(() => {
+    loadSettings();
+  }, []);
+
+  const loadSettings = async () => {
+    const settings = await sessionStorage.getSettings();
+    setFocus(settings.focus);
+    setShortBreak(settings.shortBreak);
+    setLongBreak(settings.longBreak);
+    setSessions(settings.sessionsBeforeLongBreak);
+  };
+
+  const handleSave = async () => {
+    const settings = {
+      focus,
+      shortBreak,
+      longBreak,
+      sessionsBeforeLongBreak: sessions,
+    };
+    await sessionStorage.saveSettings(settings);
+    navigation.goBack();
+  };
 
   return (
     // overlay: Modal'ın arka planı (yarı saydam siyah)
@@ -40,7 +65,7 @@ export default function CycleSettingsModal({navigation}) {
             maximumValue={60}           // Maximum: 60 dakika
             step={5}                    // Artış miktarı: 5'er dakika
             value={focus}               // Mevcut değer: focus state'i
-            onValueChange={setFocus}    // Değer değişince setFocus çalışır
+            onValueChange={(value) => setFocus(Array.isArray(value) ? value[0] : value)}    // Değer değişince setFocus çalışır
             minimumTrackTintColor="#4EC8C0" // Sol taraf: turkuaz
             maximumTrackTintColor="#2A2E35" // Sağ taraf: gri
             thumbTintColor="#D1D5DB"    // Kaydırıcı: açık gri
@@ -57,7 +82,7 @@ export default function CycleSettingsModal({navigation}) {
             maximumValue={15}           // Maximum: 15 dakika
             step={1}                    // Artış miktarı: 1'er dakika
             value={shortBreak}          // Mevcut değer
-            onValueChange={setShortBreak} // Değiştiğinde setShortBreak çalışır
+            onValueChange={(value) => setShortBreak(Array.isArray(value) ? value[0] : value)} // Değiştiğinde setShortBreak çalışır
             minimumTrackTintColor="#4EC8C0"
             maximumTrackTintColor="#2A2E35"
             thumbTintColor="#D1D5DB"
@@ -74,7 +99,7 @@ export default function CycleSettingsModal({navigation}) {
             maximumValue={30}           // Maximum: 30 dakika
             step={5}                    // Artış miktarı: 5'er dakika
             value={longBreak}           // Mevcut değer
-            onValueChange={setLongBreak} // Değiştiğinde setLongBreak çalışır
+            onValueChange={(value) => setLongBreak(Array.isArray(value) ? value[0] : value)} // Değiştiğinde setLongBreak çalışır
             minimumTrackTintColor="#4EC8C0"
             maximumTrackTintColor="#2A2E35"
             thumbTintColor="#D1D5DB"
@@ -91,7 +116,7 @@ export default function CycleSettingsModal({navigation}) {
             maximumValue={6}            // Maximum: 6 seans
             step={1}                    // Artış miktarı: 1'er seans
             value={sessions}            // Mevcut değer
-            onValueChange={setSessions} // Değiştiğinde setSessions çalışır
+            onValueChange={(value) => setSessions(Array.isArray(value) ? value[0] : value)} // Değiştiğinde setSessions çalışır
             minimumTrackTintColor="#4EC8C0"
             maximumTrackTintColor="#2A2E35"
             thumbTintColor="#D1D5DB"
@@ -101,7 +126,7 @@ export default function CycleSettingsModal({navigation}) {
           {/* DONE BUTTON */}
         <TouchableOpacity
           style={styles.doneBtn}
-          onPress={() => navigation.goBack()}
+          onPress={handleSave}
         >
             <Text style={styles.doneText}>Done</Text>
           </TouchableOpacity>

@@ -3,16 +3,17 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 // EKRANLAR
-import StatisticScreen from './screens/StatisticScreen';
-import SettingScreen from './screens/SettingScreen';
+import StatisticScreen from './Screens/StatisticScreen';
+import SettingScreen from './Screens/SettingScreen';
 
 // MODALLAR
-import MyTasksModal from './screens/MyTasksModal';
-import CycleSettingsModal from './screens/CycleSettingsModal';
-import ShareStatsModal from './screens/ShareStatsModal';
+import MyTasksModal from './Screens/MyTasksModal';
+import CycleSettingsModal from './Screens/CycleSettingsModal';
+import ShareStatsModal from './Screens/ShareStatsModal';
+import TaskSelectionModal from './Screens/TaskSelectionModal';
 
 // TIMER 
-import TimerScreen from './screens/TimerScreen.js'; 
+import TimerScreen from './Screens/TimerScreen.js'; 
 
 
 const Stack = createNativeStackNavigator();
@@ -45,6 +46,11 @@ export default function App() {
         <Stack.Screen
           name="ShareModal"
           component={ShareStatsModal}
+          options={{ presentation: 'modal' }}
+        />
+        <Stack.Screen
+          name="TaskSelectionModal"
+          component={TaskSelectionModal}
           options={{ presentation: 'modal' }}
         />
 
