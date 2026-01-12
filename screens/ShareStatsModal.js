@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useContext } from "react";
 import {
   View,
   Text,
@@ -7,8 +7,11 @@ import {
   TouchableOpacity,
 } from "react-native";
 import FontAwesome from "react-native-vector-icons/FontAwesome";
+import { ThemeContext } from "../context/ThemeContext";
 
 export default function ShareStatsModal({ navigation }) {
+  const theme = useContext(ThemeContext);
+  const styles = getStyles(theme);
   return (
 
       <View style={styles.overlay}>
@@ -57,7 +60,7 @@ export default function ShareStatsModal({ navigation }) {
  
   );
 }
-const styles = StyleSheet.create({
+const getStyles = (theme) => StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.6)",
@@ -68,7 +71,7 @@ const styles = StyleSheet.create({
 
   card: {
     width: "100%",
-    backgroundColor: "#0E1525",
+    backgroundColor: theme.colors.background,
     borderRadius: 20,
     padding: 20,
   },
@@ -83,20 +86,20 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "#151B2B",
+    backgroundColor: theme.colors.surface,
     justifyContent: "center",
     alignItems: "center",
     marginRight: 10,
   },
 
   title: {
-    color: "#fff",
+    color: theme.colors.text,
     fontSize: 18,
     fontWeight: "700",
   },
 
   subtitle: {
-    color: "#A0A4AB",
+    color: theme.colors.textSecondary,
     marginBottom: 20,
   },
 
@@ -107,25 +110,25 @@ const styles = StyleSheet.create({
   },
 
   label: {
-    color: "#A0A4AB",
+    color: theme.colors.textSecondary,
     fontSize: 14,
   },
 
   value: {
-    color: "#fff",
+    color: theme.colors.text,
     fontSize: 24,
     fontWeight: "700",
   },
 
   divider: {
     height: 1,
-    backgroundColor: "#1F1F23",
+    backgroundColor: theme.colors.surfaceSecondary,
     marginVertical: 16,
   },
 
   footer: {
     textAlign: "center",
-    color: "#5F646C",
+    color: theme.colors.textTertiary,
     fontSize: 12,
   },
 
@@ -138,14 +141,14 @@ const styles = StyleSheet.create({
 
   closeBtn: {
     flex: 1,
-    backgroundColor: "#2A2E35",
+    backgroundColor: theme.colors.surfaceSecondary,
     paddingVertical: 16,
     borderRadius: 30,
     alignItems: "center",
   },
 
   closeText: {
-    color: "#fff",
+    color: theme.colors.text,
     fontSize: 16,
     fontWeight: "600",
   },
@@ -159,7 +162,7 @@ const styles = StyleSheet.create({
   },
 
   shareText: {
-    color: "#0E1525",
+    color: theme.darkMode ? "#0E1525" : "#000",
     fontSize: 16,
     fontWeight: "700",
   },
