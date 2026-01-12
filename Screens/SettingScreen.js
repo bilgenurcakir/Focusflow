@@ -5,10 +5,64 @@ import { Ionicons } from '@expo/vector-icons';
 import { Slider } from '@miblanchard/react-native-slider';
 import { sessionStorage } from '../utils/sessionStorage';
 import { ThemeContext } from '../context/ThemeContext';
+import { soundManager } from '../utils/soundManager';
 
 export default function SettingsScreen({ navigation }) {
   const theme = useContext(ThemeContext);
   const [volume, setVolume] = useState(0.7);
+  const [alertSoundEnabled, setAlertSoundEnabled] = useState(true);
+  const [alertVolume, setAlertVolume] = useState(0.7);
+
+  // Load settings on mount
+  useEffect(() => {
+    loadSettings();
+  }, []);
+
+  const loadSettings = async () => {
+    try {
+      const settings = await sessionStorage.getSettings();
+      if (settings.alertSoundEnabled !== undefined) {
+        setAlertSoundEnabled(settings.alertSoundEnabled);
+      }
+      if (settings.alertVolume !== undefined) {
+        setAlertVolume(settings.alertVolume);
+      }
+      if (settings.volume !== undefined) {
+        setVolume(settings.volume);
+      }
+    } catch (error) {
+      console.error('Error loading settings:', error);
+    }
+  };
+
+  // Save alert sound setting
+  const handleAlertSoundToggle = useCallback(async (value) => {
+    setAlertSoundEnabled(value);
+    try {
+      const settings = await sessionStorage.getSettings();
+      await sessionStorage.saveSettings({
+        ...settings,
+        alertSoundEnabled: value,
+      });
+    } catch (error) {
+      console.error('Error saving alert sound setting:', error);
+    }
+  }, []);
+
+  // Save alert volume
+  const handleAlertVolumeChange = useCallback(async (value) => {
+    const newVolume = typeof value === 'number' ? value : value[0];
+    setAlertVolume(newVolume);
+    try {
+      const settings = await sessionStorage.getSettings();
+      await sessionStorage.saveSettings({
+        ...settings,
+        alertVolume: newVolume,
+      });
+    } catch (error) {
+      console.error('Error saving alert volume:', error);
+    }
+  }, []);
 
   const handleDarkModeToggle = useCallback((value) => {
     theme.toggleDarkMode(value);
@@ -42,6 +96,14 @@ export default function SettingsScreen({ navigation }) {
     );
   };
 
+  // Test alert sound
+  const testAlertSound = () => {
+    soundManager.playMultipleBeeps(2, alertVolume).catch(error => {
+      console.error('Error playing test sound:', error);
+      Alert.alert('Error', 'Failed to play alert sound. Please check your device volume.');
+    });
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {/* HEADER */}
@@ -58,30 +120,45 @@ export default function SettingsScreen({ navigation }) {
       {/* NOTIFICATIONS */}
       <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary }]}>NOTIFICATIONS</Text>
       <View style={[styles.card, { backgroundColor: theme.colors.surface }]}>
-        <SettingRow
-          icon="notifications-outline"
-          label="Alert Sound"
-          value="Chime"
-          showArrow
-          theme={theme}
-        />
+        <View style={styles.row}>
+          <View style={styles.rowLeft}>
+            <Ionicons name="notifications-outline" size={22} color={theme.colors.primary} />
+            <Text style={[styles.rowLabel, { color: theme.colors.text }]}>Alert Sound</Text>
+          </View>
+          <Switch
+            value={alertSoundEnabled}
+            onValueChange={handleAlertSoundToggle}
+            trackColor={{
+              false: theme.colors.border,
+              true: theme.colors.primary,
+            }}
+            thumbColor="#fff"
+          />
+        </View>
         <Divider theme={theme} />
         <View style={styles.row}>
           <View style={styles.rowLeft}>
             <Ionicons name="volume-high-outline" size={22} color={theme.colors.primary} />
-            <Text style={[styles.rowLabel, { color: theme.colors.text }]}>Volume</Text>
+            <Text style={[styles.rowLabel, { color: theme.colors.text }]}>Alert Volume</Text>
           </View>
           <Slider
             style={{ width: 140 }}
             minimumValue={0}
             maximumValue={1}
-            value={volume}
-            onValueChange={setVolume}
+            value={alertVolume}
+            onValueChange={handleAlertVolumeChange}
             minimumTrackTintColor={theme.colors.primary}
             maximumTrackTintColor={theme.colors.border}
             thumbTintColor={theme.colors.primary}
           />
         </View>
+        <Divider theme={theme} />
+        <TouchableOpacity onPress={testAlertSound} style={styles.row}>
+          <View style={styles.rowLeft}>
+            <Ionicons name="play-outline" size={22} color={theme.colors.primary} />
+            <Text style={[styles.rowLabel, { color: theme.colors.primary }]}>Test Alert Sound</Text>
+          </View>
+        </TouchableOpacity>
       </View>
 
       {/* APPEARANCE */}

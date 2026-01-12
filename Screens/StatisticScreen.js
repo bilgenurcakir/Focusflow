@@ -5,11 +5,14 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
+  ActivityIndicator,
+  Modal,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import Svg, { Circle } from "react-native-svg";
 import { sessionStorage } from "../utils/sessionStorage";
 import { ThemeContext } from "../context/ThemeContext";
+import { geminiAPI } from "../utils/geminiAPI";
 
 export default function StatisticsScreen({navigation}) {
   const theme = useContext(ThemeContext);
@@ -23,6 +26,9 @@ export default function StatisticsScreen({navigation}) {
     weeklyBreakdown: {},
   });
   const [recentSessions, setRecentSessions] = useState([]);
+  const [feedbackLoading, setFeedbackLoading] = useState(false);
+  const [feedbackModalVisible, setFeedbackModalVisible] = useState(false);
+  const [aiiFeedback, setAIFeedback] = useState("");
 
   const radius = 60; // Dairenin yarıçapı (piksel)
   const stroke = 14; // Çizgi kalınlığı
@@ -116,6 +122,25 @@ export default function StatisticsScreen({navigation}) {
 
   const progress = statistics.focusPercentage / 100; // Convert percentage to ratio
   const styles = getStyles(theme);
+
+  // Request AI feedback from Gemini
+  const handleGetFeedback = async () => {
+    setFeedbackLoading(true);
+    setAIFeedback(''); // Reset feedback
+    try {
+      const feedback = await geminiAPI.getStatisticsFeedback(statistics);
+      console.log('Feedback received:', feedback);
+      setAIFeedback(feedback || 'No feedback received');
+      setFeedbackModalVisible(true);
+    } catch (error) {
+      console.error('Error getting feedback:', error);
+      const errorMsg = error?.message || 'Failed to get feedback. Please try again.';
+      setAIFeedback(errorMsg);
+      setFeedbackModalVisible(true);
+    } finally {
+      setFeedbackLoading(false);
+    }
+  };
 
   return ( //showsVerticalScrollIndicator=kaydırma çubuğunu gizle
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}> 
@@ -239,13 +264,64 @@ export default function StatisticsScreen({navigation}) {
       )}
 
       {/* SHARE BUTTON */}
-  <TouchableOpacity
+    <TouchableOpacity
   style={styles.shareBtn}
   onPress={() => navigation.navigate("ShareModal")}
 >
         <Ionicons name="share-outline" size={20} color="#0E1525" />
         <Text style={styles.shareText}>Share Statistics</Text>
       </TouchableOpacity>
+
+            {/* AI FEEDBACK BUTTON */}
+      <TouchableOpacity
+        style={styles.aiFeedbackBtn}
+        onPress={handleGetFeedback}
+        disabled={feedbackLoading}
+      >
+        {feedbackLoading ? (
+          <ActivityIndicator size="small" color="#fff" />
+        ) : (
+          <>
+            <Ionicons name="sparkles" size={20} color="#fff" />
+            <Text style={styles.aiFeedbackText}>Get AI Feedback</Text>
+          </>
+        )}
+      </TouchableOpacity>
+
+    {/* FEEDBACK MODAL */}
+    <Modal
+      visible={feedbackModalVisible}
+      transparent={true}
+      animationType="slide"
+      onRequestClose={() => setFeedbackModalVisible(false)}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={[styles.modalContent, { backgroundColor: theme.colors.surface }]}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>AI Feedback</Text>
+            <TouchableOpacity onPress={() => setFeedbackModalVisible(false)}>
+              <Ionicons name="close" size={24} color={theme.colors.text} />
+            </TouchableOpacity>
+          </View>
+<ScrollView>
+          <View style={styles.feedbackContainer}>
+            <View style={styles.feedbackIcon}>
+              <Ionicons name="sparkles" size={32} color="#4EC8C0" />
+            </View>
+            <Text style={styles.feedbackText}>
+              {aiiFeedback || 'Loading feedback...'}
+            </Text>
+          </View>
+</ScrollView>
+          <TouchableOpacity
+            style={styles.modalCloseBtn}
+            onPress={() => setFeedbackModalVisible(false)}
+          >
+            <Text style={styles.modalCloseBtnText}>Close</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
     </ScrollView>
   );
 }
@@ -495,6 +571,23 @@ const getStyles = (theme) => StyleSheet.create({
     fontWeight: "700",
   },
 
+  aiFeedbackBtn: {
+    backgroundColor: "#6366F1",
+    marginBottom: 30,
+    borderRadius: 30,
+    paddingVertical: 16,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 8,
+  },
+
+  aiFeedbackText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "700",
+  },
+
   emptyState: {
     backgroundColor: theme.colors.surface,
     borderRadius: 16,
@@ -514,5 +607,75 @@ const getStyles = (theme) => StyleSheet.create({
     color: theme.colors.textSecondary,
     fontSize: 12,
     textAlign: "center",
+  },
+
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-end",
+  },
+
+  modalContent: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: "85%",
+    paddingTop: 24,
+  },
+
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.surfaceSecondary,
+  },
+
+  modalTitle: {
+    color: theme.colors.text,
+    fontSize: 18,
+    fontWeight: "700",
+  },
+
+  feedbackScroll: {
+    flex: 1,
+    paddingHorizontal: 20,
+  },
+
+  feedbackContainer: {
+    alignItems: "center",
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+    minHeight: 150,
+    justifyContent: "center",
+  },
+
+  feedbackIcon: {
+    marginBottom: 16,
+  },
+
+  feedbackText: {
+    fontSize: 15,
+    lineHeight: 24,
+    textAlign: "center",
+    marginTop: 8,
+    color: "#FFFFFF",
+  },
+
+  modalCloseBtn: {
+    backgroundColor: "#4EC8C0",
+    marginHorizontal: 20,
+    marginBottom: 20,
+    borderRadius: 24,
+    paddingVertical: 14,
+    alignItems: "center",
+  },
+
+  modalCloseBtnText: {
+    color: theme.darkMode ? "#0E1525" : "#000",
+    fontSize: 16,
+    fontWeight: "700",
   },
 });

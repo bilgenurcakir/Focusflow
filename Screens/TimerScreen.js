@@ -6,6 +6,7 @@ import Svg, { Circle, G } from 'react-native-svg';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import { sessionStorage } from '../utils/sessionStorage';
 import { ThemeContext } from '../context/ThemeContext';
+import { soundManager } from '../utils/soundManager';
 
 
 
@@ -67,6 +68,8 @@ export default function TimerScreen({ navigation }) {
     longBreak: 15,
     sessionsBeforeLongBreak: 4,
   });
+  const [alertSoundEnabled, setAlertSoundEnabled] = useState(true);
+  const [alertVolume, setAlertVolume] = useState(0.7);
   const [focusSessionCount, setFocusSessionCount] = useState(0); // Track focus sessions for long break
   const sessionStartTime = useRef(null);
   const hasSavedSession = useRef(false);
@@ -80,6 +83,14 @@ export default function TimerScreen({ navigation }) {
   useEffect(() => {
     const initializeSettings = async () => {
       const loadedSettings = await sessionStorage.getSettings();
+      
+      // Load alert sound settings
+      if (loadedSettings.alertSoundEnabled !== undefined) {
+        setAlertSoundEnabled(loadedSettings.alertSoundEnabled);
+      }
+      if (loadedSettings.alertVolume !== undefined) {
+        setAlertVolume(loadedSettings.alertVolume);
+      }
       
       // Load task-specific settings if a task is selected
       if (taskName && taskName.trim()) {
@@ -210,6 +221,13 @@ export default function TimerScreen({ navigation }) {
   // Handle timer completion when time reaches 0
   useEffect(() => {
     if (time === 0 && !hasSavedSession.current) {
+      // Play alert sound if enabled
+      if (alertSoundEnabled) {
+        soundManager.playMultipleBeeps(3, alertVolume).catch(error => {
+          console.log('Alert sound error:', error);
+        });
+      }
+      
       // Ensure timer is stopped
       if (isRunning) {
         setIsRunning(false);
@@ -223,7 +241,7 @@ export default function TimerScreen({ navigation }) {
         }, 100);
       }
     }
-  }, [time, isRunning, saveSessionOnComplete]);
+  }, [time, isRunning, alertSoundEnabled, alertVolume, saveSessionOnComplete]);
 
   // Save session when timer completes
   const saveSessionOnComplete = useCallback(async () => {
