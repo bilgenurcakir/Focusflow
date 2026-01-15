@@ -266,7 +266,7 @@ export default function StatisticsScreen({navigation}) {
       {/* SHARE BUTTON */}
     <TouchableOpacity
   style={styles.shareBtn}
-  onPress={() => navigation.navigate("ShareModal")}
+  onPress={() => navigation.navigate("ShareModal", { statistics })}
 >
         <Ionicons name="share-outline" size={20} color="#0E1525" />
         <Text style={styles.shareText}>Share Statistics</Text>
